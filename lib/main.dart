@@ -12,7 +12,7 @@ class PokeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Pokédex',
+      title: 'Pokédex de Johao Lopz',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
@@ -104,7 +104,7 @@ class _ElementSelectionScreenState extends State<ElementSelectionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Pokédex',
+          'Pokédex de Johao Lopz',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.red,
@@ -438,13 +438,21 @@ class _PokemonListScreenState extends State<PokemonListScreen>
                   itemBuilder: (context, index) {
                     final pokemon = pokemonList[index];
                     return ListTile(
+                      contentPadding:
+                          const EdgeInsets.only(left: 16.0, right: 14.0),
+                      horizontalTitleGap: 12.0,
                       leading: CircleAvatar(
                         backgroundColor: widget.element.color,
                         child: const Icon(Icons.catching_pokemon, color: Colors.white),
                       ),
                       title: Text(
                         pokemon['name'].toString().toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       subtitle: Text('Elemento ${widget.element.title}'),
                       trailing: ElevatedButton(
@@ -452,7 +460,7 @@ class _PokemonListScreenState extends State<PokemonListScreen>
                           backgroundColor: widget.element.color,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
+                            horizontal: 10,
                             vertical: 8,
                           ),
                           shape: RoundedRectangleBorder(

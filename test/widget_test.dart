@@ -18,7 +18,7 @@ void main() {
     await tester.pump();
 
     // 3. Now the 4 element cards should be visible
-    expect(find.text('Pokédex'), findsOneWidget);
+    expect(find.text('Pokédex de Johao Lopz'), findsOneWidget);
     expect(find.text('Agua'), findsOneWidget);
     expect(find.text('Fuego'), findsOneWidget);
     expect(find.text('Tierra'), findsOneWidget);
