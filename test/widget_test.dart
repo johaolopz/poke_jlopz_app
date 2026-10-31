@@ -1,30 +1,42 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:poke_jlopz_app/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets(
+      'Initial image loader with spinner, element screen, and gif + linear progress bar on selection',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const PokeApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // 1. Initial screen displays Pikachu static image and CircularProgressIndicator
+    expect(find.text('Cargando Pokédex...'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    // 2. Wait 5 seconds for initial loader to complete
+    await tester.pump(const Duration(seconds: 5));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // 3. Now the 4 element cards should be visible
+    expect(find.text('Pokédex'), findsOneWidget);
+    expect(find.text('Agua'), findsOneWidget);
+    expect(find.text('Fuego'), findsOneWidget);
+    expect(find.text('Tierra'), findsOneWidget);
+    expect(find.text('Aire'), findsOneWidget);
+
+    // 4. Tap on 'Agua' card
+    await tester.tap(find.text('Agua'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // 5. Verify navigation to PokemonListScreen:
+    // CircularProgressIndicator is gone, but LinearProgressIndicator is present
+    expect(find.text('Pokémon: Agua'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+    // 6. Advance past the 3-second minimum timer
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
   });
 }
