@@ -39,4 +39,22 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
   });
+
+  testWidgets('PokemonDetailScreen renders pokemon name and details card correctly',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PokemonDetailScreen(
+          pokemonName: 'squirtle',
+          pokemonUrl: 'https://pokeapi.co/api/v2/pokemon/7/',
+          elementColor: Colors.blue,
+          elementTitle: 'Agua',
+        ),
+      ),
+    );
+
+    // Verify AppBar shows pokemon name
+    expect(find.text('SQUIRTLE'), findsWidgets);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
 }

@@ -447,10 +447,367 @@ class _PokemonListScreenState extends State<PokemonListScreen>
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text('Elemento ${widget.element.title}'),
-                      trailing: Text('#${index + 1}'),
+                      trailing: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.element.color,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PokemonDetailScreen(
+                                pokemonName: pokemon['name'].toString(),
+                                pokemonUrl: pokemon['url']?.toString(),
+                                elementColor: widget.element.color,
+                                elementTitle: widget.element.title,
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Ver pokémon',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     );
                   },
                 ),
+    );
+  }
+}
+
+class PokemonDetailScreen extends StatefulWidget {
+  final String pokemonName;
+  final String? pokemonUrl;
+  final Color elementColor;
+  final String elementTitle;
+
+  const PokemonDetailScreen({
+    super.key,
+    required this.pokemonName,
+    this.pokemonUrl,
+    required this.elementColor,
+    required this.elementTitle,
+  });
+
+  @override
+  State<PokemonDetailScreen> createState() => _PokemonDetailScreenState();
+}
+
+class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
+  Map<String, dynamic>? pokemonData;
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchDetails();
+  }
+
+  int get pokemonId {
+    if (pokemonData != null && pokemonData!['id'] != null) {
+      return pokemonData!['id'] as int;
+    }
+    if (widget.pokemonUrl != null) {
+      final uri = Uri.tryParse(widget.pokemonUrl!);
+      if (uri != null) {
+        final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+        if (segments.isNotEmpty) {
+          final parsed = int.tryParse(segments.last);
+          if (parsed != null) return parsed;
+        }
+      }
+    }
+    return 1;
+  }
+
+  String get imageUrl =>
+      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$pokemonId.png';
+
+  Future<void> fetchDetails() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://pokeapi.co/api/v2/pokemon/${widget.pokemonName.toLowerCase()}',
+        ),
+      );
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        setState(() {
+          pokemonData = json.decode(response.body) as Map<String, dynamic>;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          errorMessage = 'No se encontraron detalles';
+          isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        errorMessage = 'Error de conexión';
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.pokemonName.toUpperCase(),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: widget.elementColor,
+        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
+      ),
+      body: isLoading
+          ? Center(
+              child: CircularProgressIndicator(color: widget.elementColor),
+            )
+          : errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                      const SizedBox(height: 12),
+                      Text(errorMessage!, style: const TextStyle(fontSize: 16)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            isLoading = true;
+                            errorMessage = null;
+                          });
+                          fetchDetails();
+                        },
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 1. Imagen grande del Pokémon
+                      Container(
+                        height: 220,
+                        width: 220,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: widget.elementColor.withValues(alpha: 0.1),
+                        ),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.catching_pokemon,
+                            size: 100,
+                            color: widget.elementColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 2. Nombre del Pokémon
+                      Text(
+                        widget.pokemonName.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      Text(
+                        '#${pokemonId.toString().padLeft(3, '0')}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 3. Tarjeta con los detalles del Pokémon
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: widget.elementColor),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Detalles del Pokémon',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 24),
+
+                              // Atributos físicos (Altura, Peso, Experiencia)
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  _DetailStatItem(
+                                    label: 'Altura',
+                                    value:
+                                        '${((pokemonData?['height'] ?? 0) / 10).toStringAsFixed(1)} m',
+                                    icon: Icons.height,
+                                    color: widget.elementColor,
+                                  ),
+                                  _DetailStatItem(
+                                    label: 'Peso',
+                                    value:
+                                        '${((pokemonData?['weight'] ?? 0) / 10).toStringAsFixed(1)} kg',
+                                    icon: Icons.fitness_center,
+                                    color: widget.elementColor,
+                                  ),
+                                  _DetailStatItem(
+                                    label: 'Exp. Base',
+                                    value: '${pokemonData?['base_experience'] ?? '-'}',
+                                    icon: Icons.star_outline,
+                                    color: widget.elementColor,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+
+                              // Tipos
+                              const Text(
+                                'Tipos',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: ((pokemonData?['types'] as List<dynamic>?) ??
+                                        [])
+                                    .map((t) {
+                                  final typeName =
+                                      t['type']?['name']?.toString() ?? '';
+                                  return Chip(
+                                    label: Text(
+                                      typeName.toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    backgroundColor: widget.elementColor,
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 20),
+
+                              // Habilidades
+                              const Text(
+                                'Habilidades',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children:
+                                    ((pokemonData?['abilities'] as List<dynamic>?) ??
+                                            [])
+                                        .map((a) {
+                                  final abilityName =
+                                      a['ability']?['name']?.toString() ?? '';
+                                  final isHidden = a['is_hidden'] == true;
+                                  return Chip(
+                                    label: Text(
+                                      isHidden
+                                          ? '${abilityName.toUpperCase()} (Oculta)'
+                                          : abilityName.toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.grey.shade200,
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+    );
+  }
+}
+
+class _DetailStatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _DetailStatItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+      ],
     );
   }
 }
